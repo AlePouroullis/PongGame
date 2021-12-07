@@ -1,81 +1,104 @@
 # This is a sample Python script.
-import pygame, sys
+import pygame, sys, const, Point, Distance
 from Ball import Ball
-import constant
+from Player import Player
+from AI import AI
 
-class gameLoop:
+class Game:
     def __init__(self):
         pygame.init()
         pygame.display.set_caption("Pong Game")
-        self.screen = pygame.display.set_mode(constant.DIMENSIONS)
-        self.player = pygame.Rect(50, constant.HEIGHT//2, constant.paddleWidth, constant.paddleHeight)
-        self.opponent = pygame.Rect(constant.WIDTH-50, constant.HEIGHT//2, constant.paddleWidth, constant.paddleHeight)
-        self.player_score = 0
-        self.opponent_score = 0
-        self.ball = Ball(constant.WIDTH//2, constant.HEIGHT//2, 10, 2, 2)
-        self.paddle_color = pygame.Color(constant.RED)
-        self.run = True
+        self.screen = pygame.display.set_mode(const.DIMENSIONS)
+        self.player = Player()
+        self.ai = AI()
+        # The order of the constructor parameters is as follows: x, y, vx, vy, radius
+        self.ball = Ball(const.WIDTH // 2, const.HEIGHT // 2, 10)
+        self.paddle_color = pygame.Color(const.RED)
+        self.isStarted = False
+
+        self.font = pygame.font.SysFont("Arial", 32)
 
     def draw(self):
-        self.screen.fill(constant.BLACK)
-        pygame.draw.rect(self.screen, self.paddle_color, self.player)
-        pygame.draw.circle(self.screen, constant.GREEN, (self.ball.x, self.ball.y), 10)
-        pygame.draw.rect(self.screen, self.paddle_color, self.opponent)
+        self.screen.fill(const.BLACK)
+        pygame.draw.rect(self.screen, self.paddle_color, pygame.Rect(self.player.x, self.player.y,
+                                                                     const.paddleWidth, const.paddleHeight))
+        pygame.draw.rect(self.screen, self.paddle_color, pygame.Rect(self.ai.x, self.ai.y,
+                                                                     const.paddleWidth, const.paddleHeight))
+        pygame.draw.circle(self.screen, const.GREEN, (self.ball.x, self.ball.y), 10)
+
+        self.screen.blit(self.font.render(str(self.player.score), True, const.WHITE), const.TOP_LEFT)
+        self.screen.blit(self.font.render(str(self.ai.score), True, const.WHITE), const.TOP_RIGHT)
+
         pygame.display.flip()
 
-    def move_player(self, y):
-        if y > constant.HEIGHT - self.player.height:
-            self.player.bottom = constant.HEIGHT
-        elif y < 0:
-            self.player.top = 0
-        else:
-            self.player.top = y
+    def reset_game(self):
+        self.ball.respawn()
+        self.player.reset()
+        self.ai.reset()
+        self.isStarted = False
 
-    def pointInRectangle(self, circleCentre, A, B, C):
-        """A represents the top left vertex, B the top right, C the bottom left and all parameters are tuples"""
-        return A[0] <= circleCentre[0] <= B[0] and A[1] >= circleCentre[1] >= C[1]
+    def check_collision_with_side_walls(self):
+        if self.ball.is_off_left_side():
+            self.ai.increment_score()
+            self.reset_game()
+        elif self.ball.is_off_right_side():
+            self.player.increment_score()
+            self.reset_game()
 
-    def Intersect(self, ball_centre, edge):
-        return edgeball_centre[0]
 
-    def intersect(self, ball, paddle):
-        top_left = (self.paddle.left, self.paddle.top)
-        top_right = (self.paddle.right, self.paddle.top)
-        bottom_left = (self.paddle.left, self.paddle.bottom)
-        bottom_right = (self.paddle.right, self.paddle.bottom)
-        ball_centre = (self.ball.x, self.ball.y)
-        return self.PointInRectangle(ball_centre, top_left, top_right, bottom_left) or
-                self.Intersect(ball_centre, (top_left, top_right)) or
-                self.Intersect(ball_centre, (top_right, bottom_right)) or
-                self.Intersect(ball_centre, (bottom_left, bottom_right)) or
-                self.Intersect(ball_centre, (top_left, bottom_left))
+    """
+    def intersects(self, ball, rect_centre):
+        dist_between_centres = self.Distance(ball.x, ball.y, rect_centre.x, rect_centre.y)
 
-    def move_ball(self):
-        self.ball.x += self.ball.vx
-        self.ball.y += self.ball.vy
-        if self.ball.x <= 0:
-            self.opponent_score += 1
-            self.respawnBall()
-        elif self.ball.x >= constant.WIDTH:
-            self.player_score += 1
-            self.respawnBall()
-        if self.ball.y < 0 or self.ball.y > constant.HEIGHT:
+        if dist_between_centres.x > const.paddleWidth // 2 + ball.radius: return False
+        if dist_between_centres.y > const.paddleHeight // 2 + ball.radius: return False
+
+        if dist_between_centres.x <= const.paddleWidth // 2: return True
+        if dist_between_centres.y <= const.paddleHeight // 2: return True
+
+        cornerDistance_sq = self.Distance(dist_between_centres.x, dist_between_centres.y,
+                                          const.paddleWidth // 2, const.paddleHeight // 2)
+        return True if cornerDistance_sq <= ball.radius else False
+    """
+
+    """
+    def check_collision(self):
+        # Test for collision with player
+        if (
+                self.intersects(self.ball, self.Point(self.player.centerx, self.player.centery)) or
+                self.intersects(self.ball, self.Point(self.ai.centerx, self.ai.centery))
+        ):
+            self.ball.vx = -self.ball.vx
+        elif (self.ball.x - self.ball.radius <= 0 or self.ball.x + self.ball.radius >= const.HEIGHT):
             self.ball.vy = -self.ball.vy
+    """
 
-    def respawnBall(self):
-        self.ball.x = constant.WIDTH//2
-        self.ball.y = constant.HEIGHT//2
-        self.vx = 2
-        self.vy = 2
 
 if __name__ == "__main__":
-    game = gameLoop()
-    while game.run:
+    game = Game()
+    while True:
         pygame.time.delay(30)
         for event in pygame.event.get():
-            if event.type == pygame.QUIT: game.run = False
-        mouse_pos = pygame.mouse.get_pos()
-        game.move_player(mouse_pos[1])
-        game.move_ball()
-        game.draw()
+            if event.type == pygame.QUIT: sys.exit()
 
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_SPACE] and not game.isStarted:
+            game.isStarted = True
+            game.ball.vx = 3
+            game.ball.vy = 5
+
+        if game.isStarted:
+            mouse_pos = pygame.mouse.get_pos()
+            game.player.move(mouse_pos[1])
+
+            if keys[pygame.K_DOWN]:
+                game.ai.move(game.ai.y + game.ai.speed)
+            elif keys[pygame.K_UP]:
+                game.ai.move(game.ai.y - game.ai.speed)
+
+            game.ball.move()
+            game.check_collision_with_side_walls()
+
+            #game.check_collision()
+
+        game.draw()
