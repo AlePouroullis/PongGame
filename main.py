@@ -1,8 +1,11 @@
 # This is a sample Python script.
-import pygame, sys, const, Point, Distance
+import pygame, sys, const
 from Ball import Ball
 from Player import Player
 from AI import AI
+from Point import Point
+from Distance import Distance
+
 
 class Game:
     def __init__(self):
@@ -45,10 +48,8 @@ class Game:
             self.player.increment_score()
             self.reset_game()
 
-
-    """
     def intersects(self, ball, rect_centre):
-        dist_between_centres = self.Distance(ball.x, ball.y, rect_centre.x, rect_centre.y)
+        dist_between_centres = Distance(ball.x, ball.y, rect_centre.x, rect_centre.y)
 
         if dist_between_centres.x > const.paddleWidth // 2 + ball.radius: return False
         if dist_between_centres.y > const.paddleHeight // 2 + ball.radius: return False
@@ -56,22 +57,16 @@ class Game:
         if dist_between_centres.x <= const.paddleWidth // 2: return True
         if dist_between_centres.y <= const.paddleHeight // 2: return True
 
-        cornerDistance_sq = self.Distance(dist_between_centres.x, dist_between_centres.y,
-                                          const.paddleWidth // 2, const.paddleHeight // 2)
-        return True if cornerDistance_sq <= ball.radius else False
-    """
+        corner_distance_sq = (dist_between_centres.x - const.paddleWidth // 2) ** 2 + (
+                    dist_between_centres.y - const.paddleHeight // 2) ** 2
 
-    """
-    def check_collision(self):
-        # Test for collision with player
-        if (
-                self.intersects(self.ball, self.Point(self.player.centerx, self.player.centery)) or
-                self.intersects(self.ball, self.Point(self.ai.centerx, self.ai.centery))
-        ):
+        return corner_distance_sq <= ball.radius ** 2
+
+    def check_collision_with_paddles(self):
+        player_paddle_centre = Point(self.player.x + const.paddleWidth // 2, self.player.y + const.paddleHeight // 2)
+        ai_paddle_centre = Point(self.ai.x + const.paddleWidth // 2, self.ai.y + const.paddleHeight // 2)
+        if self.intersects(self.ball, player_paddle_centre) or self.intersects(self.ball, ai_paddle_centre):
             self.ball.vx = -self.ball.vx
-        elif (self.ball.x - self.ball.radius <= 0 or self.ball.x + self.ball.radius >= const.HEIGHT):
-            self.ball.vy = -self.ball.vy
-    """
 
 
 if __name__ == "__main__":
@@ -98,7 +93,6 @@ if __name__ == "__main__":
 
             game.ball.move()
             game.check_collision_with_side_walls()
-
-            #game.check_collision()
+            game.check_collision_with_paddles()
 
         game.draw()

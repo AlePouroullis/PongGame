@@ -9,12 +9,12 @@ class AI:
         self.score = 0
 
     def reset(self):
-        self.y = const.HEIGHT // 2 - const.paddleHeight - const.paddleWidth
+        self.y = const.HEIGHT // 2 - const.paddleHeight // 2
 
     def move(self, y):
-        if self.y > const.HEIGHT - const.paddleHeight:
+        if y > const.HEIGHT - const.paddleHeight:
             self.y = const.HEIGHT - const.paddleHeight
-        elif self.y < 0:
+        elif y < 0:
             self.y = 0
         else:
             self.y = y
