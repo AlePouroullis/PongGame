@@ -1,11 +1,9 @@
 # This is a sample Python script.
-import pygame, sys, const
+import pygame, sys, const, random
 from Ball import Ball
 from Player import Player
 from AI import AI
 from Point import Point
-from Distance import Distance
-
 
 class Game:
     def __init__(self):
@@ -107,6 +105,13 @@ class Game:
                 self.ball.vy = -self.ball.vy
                 self.ball.y = self.ai.y - self.ball.length
 
+    def set_ball_speed(self):
+        x_dir_determinant = random.randint(0, 1)
+        y_dir_determinant = random.randint(0, 1)
+        vx = random.randint(5, 10)
+        vy = random.randint(5, 10)
+        self.ball.vx = vx if x_dir_determinant == 1 else -vx
+        self.ball.vy = vy if y_dir_determinant == 1 else -vy
 
 if __name__ == "__main__":
     game = Game()
@@ -118,8 +123,7 @@ if __name__ == "__main__":
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE] and not game.isStarted:
             game.isStarted = True
-            game.ball.vx = 6
-            game.ball.vy = 9
+            game.set_ball_speed()
 
         if game.isStarted:
             mouse_pos = pygame.mouse.get_pos()
