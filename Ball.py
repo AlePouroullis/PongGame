@@ -28,5 +28,11 @@ class Ball:
     def move(self):
         self.x += self.vx
         self.y += self.vy
-        if self.y - self.radius <= 0 or self.y + self.radius >= const.HEIGHT:
+        if self.y - self.radius <= 0:
             self.vy = -self.vy
+            while self.y - self.radius <= 0:
+                self.y += 1
+        elif self.y + self.radius >= const.HEIGHT:
+            self.vy = -self.vy
+            while self.y + self.radius >= const.HEIGHT:
+                self.y -= 1
