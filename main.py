@@ -1,5 +1,5 @@
 # This is a sample Python script.
-import pygame, sys, const, random
+import pygame, sys, const
 from Ball import Ball
 from Player import Player
 from AI import AI
@@ -14,8 +14,9 @@ class Game:
         self.screen = pygame.display.set_mode(const.DIMENSIONS)
         self.player = Player()
         self.ai = AI()
-        # The order of the constructor parameters is as follows: x, y, radius
-        self.ball = Ball(const.WIDTH//2, const.HEIGHT//2, 10)
+        # The order of the constructor parameters is as follows: x, y, length
+        # note: ball is square.
+        self.ball = Ball(const.WIDTH // 2, const.HEIGHT // 2, 15)
         self.paddle_color = pygame.Color(const.RED)
         self.isStarted = False
 
@@ -27,7 +28,7 @@ class Game:
                                                                      const.paddleWidth, const.paddleHeight))
         pygame.draw.rect(self.screen, self.paddle_color, pygame.Rect(self.ai.x, self.ai.y,
                                                                      const.paddleWidth, const.paddleHeight))
-        pygame.draw.circle(self.screen, const.GREEN, (self.ball.x, self.ball.y), 10)
+        pygame.draw.rect(self.screen, const.GREEN, pygame.Rect(self.ball.x, self.ball.y, self.ball.length, self.ball.length))
 
         self.screen.blit(self.font.render(str(self.player.score), True, const.WHITE), const.TOP_LEFT)
         self.screen.blit(self.font.render(str(self.ai.score), True, const.WHITE), const.TOP_RIGHT)
@@ -48,68 +49,63 @@ class Game:
             self.player.increment_score()
             self.reset_game()
 
-    def intersects(self, dist_between_centres):
-        if dist_between_centres.x > const.paddleWidth // 2 + self.ball.radius: return False
-        if dist_between_centres.y > const.paddleHeight // 2 + self.ball.radius: return False
 
-        if dist_between_centres.x <= const.paddleWidth // 2: return True
-        if dist_between_centres.y <= const.paddleHeight // 2: return True
+    def collision(self, rect1, rect2):
+        rect1_centre = Point(rect1.x + const.paddleWidth // 2, rect1.y + const.paddleHeight // 2)
+        rect2_centre = Point(rect2.x + const.paddleWidth // 2, rect2.y + const.paddleHeight // 2)
+        dx = rect1_centre.x - rect2_centre.x
+        dy = rect1_centre.y - rect2_centre.y
+        width = (rect1.width + rect2.width) / 2
+        height = (rect1.height + rect2.height) / 2
+        crossWidth = width*dy
+        crossHeight = height*dx
 
-        corner_distance_sq = (dist_between_centres.x - const.paddleWidth // 2)*(dist_between_centres.x - const.paddleWidth // 2) + (
-                                dist_between_centres.y - const.paddleHeight // 2)*(dist_between_centres.y - const.paddleHeight//2)
-        return corner_distance_sq <= self.ball.radius**2
+        if abs(dx) <= width and abs(dy) <= height:
+            if crossWidth > crossHeight:
+                return "bottom" if crossWidth > (-crossHeight) else "left"
+            else:
+                return "right" if crossWidth > (-crossHeight) else "top"
 
-    def speed_factor(self, ball, paddle):
-        # The y-values of both the ball and paddle in this case represent the y-coordinates of their centres.
-        # ||  1 <-- top of paddle
-        # ||
-        # ||  0 <-- middle of paddle
-        # ||
-        # || -1 <-- bottom of paddle
-        return (ball.y - paddle.y) / (const.paddleHeight // 2)
-
+        return "none"
 
     def check_collision_with_paddles(self):
-        player_paddle_centre = Point(self.player.x + const.paddleWidth//2, self.player.y + const.paddleHeight//2)
-        ai_paddle_centre = Point(self.ai.x + const.paddleWidth//2, self.ai.y + const.paddleHeight//2)
+        collision_with_player = self.collision(self.ball, self.player)
+        collision_with_ai = self.collision(self.ball, self.ai)
 
-        dist_between_centres_of_player_and_ball = Distance(self.ball.x, self.ball.y, player_paddle_centre.x, player_paddle_centre.y)
-        dist_between_centres_of_ai_and_ball = Distance(self.ball.x, self.ball.y, ai_paddle_centre.x, ai_paddle_centre.y)
-
-        if self.intersects(dist_between_centres_of_player_and_ball):
-            if dist_between_centres_of_player_and_ball.y <= const.paddleHeight//2:
-                while self.intersects(dist_between_centres_of_player_and_ball):
-                    self.ball.x += 1
-                    dist_between_centres_of_player_and_ball = Distance(self.ball.x, self.ball.y, player_paddle_centre.x, player_paddle_centre.y)
-                self.ball.vx = -self.ball.vx
-            elif dist_between_centres_of_player_and_ball.x <= const.paddleHeight//2:
-                while self.intersects(dist_between_centres_of_player_and_ball):
-                    # if it collides on top
-                    if self.ball.y < player_paddle_centre.y:
-                        self.ball.y -= 1
-                    else:
-                        self.ball.y += 1
-                    dist_between_centres_of_player_and_ball = Distance(self.ball.x, self.ball.y, player_paddle_centre.x, player_paddle_centre.y)
+        if collision_with_player != "none":
+            if collision_with_player == "bottom":
+                print("bottom of player")
                 self.ball.vy = -self.ball.vy
-
-        elif self.intersects(dist_between_centres_of_ai_and_ball):
-            if dist_between_centres_of_ai_and_ball.y <= const.paddleHeight//2:
-                while self.intersects(dist_between_centres_of_ai_and_ball):
-                    self.ball.x -= 1
-                    dist_between_centres_of_ai_and_ball = Distance(self.ball.x, self.ball.y, ai_paddle_centre.x, ai_paddle_centre.y)
+                self.ball.y = self.player.y + self.player.height
+            elif collision_with_player == "left":
+                print("left of player")
                 self.ball.vx = -self.ball.vx
-            elif dist_between_centres_of_player_and_ball.x <= const.paddleWidth//2:
-                while self.intersects(dist_between_centres_of_ai_and_ball):
-                    # if it collides on top
-                    if self.ball.y < ai_paddle_centre.y:
-                        self.ball.y -=1
-                    else:
-                        self.ball.y += 1
-                    dist_between_centres_of_player_and_ball = Distance(self.ball.x, self.ball.y, ai_paddle_centre.x, ai_paddle_centre.y)
+                self.ball.x = self.player.x - self.ball.length
+            elif collision_with_player == "right":
+                print("right of player")
+                self.ball.vx = -self.ball.vx
+                self.ball.x = self.player.x + self.player.width
+            elif collision_with_player == "top":
+                print("top of player")
                 self.ball.vy = -self.ball.vy
-
-
-
+                self.ball.y = self.player.y - self.ball.length
+        elif collision_with_ai != "none":
+            if collision_with_ai == "bottom":
+                print("bottom of ai")
+                self.ball.vy = -self.ball.vy
+                self.ball.y = self.ai.y + self.ai.height
+            elif collision_with_ai == "left":
+                print("left of ai")
+                self.ball.vx = -self.ball.vx
+                self.ball.x = self.ai.x - self.ball.length
+            elif collision_with_ai == "right":
+                print("right of ai")
+                self.ball.vx = -self.ball.vx
+                self.ball.x = self.ai.x + self.ai.width
+            elif collision_with_ai == "top":
+                print("top of ai")
+                self.ball.vy = -self.ball.vy
+                self.ball.y = self.ai.y - self.ball.length
 
 
 if __name__ == "__main__":
@@ -123,7 +119,7 @@ if __name__ == "__main__":
         if keys[pygame.K_SPACE] and not game.isStarted:
             game.isStarted = True
             game.ball.vx = 6
-            game.ball.vy = 5
+            game.ball.vy = 9
 
         if game.isStarted:
             mouse_pos = pygame.mouse.get_pos()

@@ -5,6 +5,8 @@ class Player:
     def __init__(self):
         self.x = const.DIST_FROM_WALL
         self.y = const.HEIGHT // 2 - const.paddleHeight // 2
+        self.width = const.paddleWidth
+        self.height = const.paddleHeight
         self.score = 0
 
     def increment_score(self):
